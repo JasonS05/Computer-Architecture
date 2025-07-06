@@ -1,0 +1,25 @@
+Instruction op-codes are encoded in a variable length format. If an op-code byte is between 0 and 63 inclusive, it is the final op-code byte. Otherwise (i.e. if it is between 64 and 127 inclusive) it is followed by another op-code byte. This means that instruction 0 has one op-code byte of 0b000\_0000, instruction 63 has one op-code byte of 0b011\_1111, instruction 64 has two op-code bytes of 0b100\_0000, 0b000\_0000, instruction 65 has two op-code bytes of 0b100\_0000, 0b000\_0001, and so on. Note that all these bytes are only 7 bits longs. That's because the most significant bit of each byte is used for determination of whether or not it is the first byte of the instruction, as described in README.md. In general, each byte of an instruction only contains 7 useful bits of information.
+
+Each instruction may be followed by a specific or variable number of additional bytes. If an invalid number of bytes or excessive number of bytes is provided then an exception is thrown. If a correct number of bytes is provided but contain invalid data, an exception is thrown. The number of provided bytes is determined by how many following bytes have a most significant bit of 0. The first following byte with a most significant bit of 1 is considered the beginning of the next instruction.
+
+0. No operation
+  - This instruction may contain up to 15 additional bytes which must all be null bytes.
+1. Relative label
+  - This instruction may contain up to 10 additional bytes which encode a signed integer in little-endian order. If all 10 bytes are provided, the most significant 6 of the total 70 provided bits must match the sign bit of the encoded 64 bit number. If fewer than 10 bytes are provided, it is automatically sign-extended to full 64 bit length. If no additional bytes are provided, it is considered an indirect label. If extraneous bytes are provided (extra null bytes for a non-negative offset or extra 0x7f bytes for a negative offset) then an exception is thrown. This instruction does not perform any operation.
+2. Absolute label
+  - This instruction behaves like a relative label but operates using an unsigned absolute address instead. If no additional bytes are provided it does not behave like an indirect label but instead assumes an absolute address of 0. This instruction does not perform any operation.
+3. Function label
+  - This instruction does not accept any additional bytes. This instruction does not perform any operation.
+4. Relative jump
+  - This instruction decodes its target address the same way as a relative label and jumps to it. An exception is thrown if the target address is not a suitable label. A label is suitable if it is either an indirect label or a label with a specified address equal to the location of this jump instruction. If this instruction does not have any additional bytes, the top eight bytes of the stack are popped and taken to be the absolute address to be jumped to.
+5. Absolute jump
+  - This instruction decodes its target address the same way as an absolute label and jumps to it. Otherwise, behavior is identical to the relative jump instruction. If this instruction does not have any additional bytes, the specified address is assumed to be 0.
+6. Relative call
+  - This instruction decodes its target address the same way as the relative jump instruction. If this instruction does not have any additional bytes, the top eight bytes of the stack are popped and taken to be the absolute address to be jumped to. Afterwards the current location of this instruction is pushed to the stack as an 8 byte address. Finally, the target address is jumped to. If the target address is not a function label, an exception is thrown.
+7. Absolute call
+  - This instruction decodes its target address the same way as the absolute jump instruction. If this instruction does not have any additional bytes, the specified address is assumed to be 0. The current location of this instruction is pushed to the stack as an 8 byte address and then the target address is jumped to. If the target address is not a function label, an exception is thrown.
+7. Relative return
+  - This instruction decodes its target address the same way as the relative label. It then pops the top eight bytes of the stack and jumps to the instruction immediately after the specified location. An exception is thrown if the specified location is not either an indirect call or call to the same location as this instruction's target address. If this instruction does not have any additional bytes, then the condition that the call it is jumping to must be to the specified target address if it is a direct call is relaxed.
+8. Absolute return
+  - This instruction decodes its target address the same way as the absolute label. It otherwise behaves identical to a relative return instruction, but if no additional bytes are provided then the target address is assumed to be 0 and the condition that the call it is jumping to must be to the target address if it is a direct call is not relaxed.
+
