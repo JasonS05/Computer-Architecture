@@ -27,9 +27,9 @@ Each instruction may be followed by a specific or variable number of additional 
 11. Conditional absolute jump
     - This instruction behaves the same as an absolute jump, but uses the same conditional mechanism as the conditional relative jump.
 12. Push immediate
-    - This instruction may accept either 1, 2, 3, 4, 5, 6, 7, 8, or 10 additional bytes. If the number of provided bits is not a multiple of 8, it truncates the excess bits and pushes the remaining ones to the stack as a list of bytes. If only one additional byte is provided, it assumes the eighth bit to be a 0. If no additional bytes are provided, an exception is thrown.
+    - This instruction may accept either 0, 1, 2, 3, 4, 5, 6, 7, 8, or 10 additional bytes. If the number of provided bits is not a multiple of 8, it truncates the excess bits and pushes the remaining ones to the stack as a list of bytes. These excess bits must be equal to 0 or else an exception is thrown. If only one additional byte is provided, then instead of truncating away the 7 provided bits, it retains them and assumes the eighth bit to be a 0. If no additional bytes are provided, it pushes a single null byte to the stack.
 13. Push stack 1 byte
-    - This instruction accepts 0, 1, or 2 additional bytes. These bytes specify as an unsigned integer how deep into the stack to fetch one byte of data. This byte is then pushed to the top of the stack. If no bytes are provided, the offset is assumed to be 0 and the top most byte of the stack is duplicated.
+    - This instruction accepts additional bytes in the same manner as the "push immediate" instruction. These bytes are as an unsigned integer which specifies how deep into the stack to fetch one byte of data. This byte is then pushed to the top of the stack. If an offset of zero is desired, then one additional byte equal to a null byte must be provided, which will cause the top byte of the stack to be duplicated. If no additional bytes are provided, this instruction pops an 8 byte unsigned integer from the stack and uses that as the corresponding offset, offsetting from where the top of the stack is after the 8 byte number is popped.
 14. Push stack 2 byte
     - This instruction behaves like the previous one but moves two bytes of data instead. An offset of 0 means the top two bytes of the stack are duplicated.
 15. Push stack 4 byte
@@ -49,15 +49,15 @@ Each instruction may be followed by a specific or variable number of additional 
 22. Push frame pointer
     - This instruction accepts no additional bytes. It pushes the 8 byte frame pointer to the stack and sets the frame pointer register to the location where those 8 bytes were pushed.
 23. Pop stack 1 byte
-    - This instruction accepts 0, 1, or 2 additional bytes. It pops one byte from the stack and then uses the additional bytes to index how far into the stack the byte should be inserted. Insertion does not expand the stack but instead overwrites data. If the index is 0 then the top byte is simply moved into the stack by one byte.
+    - This instruction behaves like the "push stack 1 byte" instruction but pops data from the top of the stack and moves it to the location in the stack specified by the provided index, overwriting the data at that location. An index of 0 simply deletes the data because the stack was shortened without moving the data. If no additional bytes are provided, the data to be moved is popped first and then the 8 byte index is popped, and the data is written offset relative to where the data would have been if the 8 byte index wasn't present.
 24. Pop stack 2 byte
-    - This instruction behaves the same as the last one but moves 2 bytes of data instead. If the index is 0 then the top two bytes are simply moved down the stack by two bytes.
+    - This instruction behaves the same as the last one but moves 2 bytes of data instead.
 25. Pop stack 4 byte
-    - This instruction behaves the same as the last one but moves 4 bytes of data instead. If the index is 0 then the top four bytes are simply moved down the stack by four bytes.
+    - This instruction behaves the same as the last one but moves 4 bytes of data instead.
 26. Pop stack 8 byte
-    - This instruction behaves the same as the last one but moves 8 bytes of data instead. If the index is 0 then the top eight bytes are simply moved down the stack by eight bytes.
+    - This instruction behaves the same as the last one but moves 8 bytes of data instead.
 27. Pop frame 1 byte
-    - This instruction accepts 0, 1, or 2 additional bytes. It interprets this data as a signed offset from the frame pointer. It pops one byte from the stack and deposits it at the specified location. If this location extends beyond the end of the stack after the pop operation then an exception is thrown.
+    - This instruction behaves the same as "pop stack 1 byte" but offsets relative to the frame pointer.
 28. Pop frame 2 byte
     - This instruction behaves the same as the last one but moves 2 bytes of data instead.
 29. Pop frame 4 byte
