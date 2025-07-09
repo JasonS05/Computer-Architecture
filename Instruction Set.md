@@ -102,22 +102,22 @@ Each instruction may be followed by a specific or variable number of additional 
 - This instruction accepts no additional bytes. It pops 8 bytes from the stack and overwrites the frame pointer register with that value.
 
 33: Swap
-- This instruction accepts 0 or 1 additional bytes. This additional byte may have one of three values: 1, 2, or 4, or else an exception is thrown. If the additional byte is not provided, it assumes an implicit value of 8. This instruction pops two values from the stack of length in bytes equal to the provided value and pushes them back to the stack in reverse order.
+- This instruction accepts up to 11 additional bytes. If no bytes are provided, the first byte is assumed to have a value of 8. If one or more additional bytes are provided, the first byte must have a value of 1, 2, 4, or 8, and specifies the size in bytes of the arguments. The remaining additional bytes are parsed in the same manner that "absolute label" parses its additional bytes and determines where, relative to the top of the stack, the first argument resides, assuming the second argument has already been popped from the stack. If only 0 or 1 additional bytes have been provided, this offset is assumed to be 0, placing the second argument directly under the first one in the stack. This instruction swaps the data at the locations of the first and second arguments.
 
 34: Equals
-- This instruction behaves like the previous one, but instead of pushing the values back to the stack, it compares them and in their place pushes a single byte equal to 0x01 if the values were exactly equal and 0x00 otherwise.
+- This instruction behaves like the previous one, but instead of swapping the data, it pops both arguments (if only 0 or 1 additional bytes were provided) or pops the second argument and reads the first one, and finally compares them and pushes a single byte equal to 0x01 if the values were exactly equal and 0x00 otherwise.
 
 35: Unsigned greater than
-- This instruction behaves like the previous one, but performs a "greater than" operation instead, assuming both operands to be unsigned integers. The operand lower on the stack is considered to be the first one.
+- This instruction behaves like the previous one, but performs a "greater than" operation instead, assuming both operands to be unsigned integers.
 
 36: Signed greater than
 - This instruction behaves like the previous one, but assumes the operands to be signed integers instead.
 
 37: Bitwise NOT
-- This instruction behaves like the previous one, but only pops one operand off of the stack instead of two and pushes it back to the stack with all bits flipped.
+- This instruction behaves like the previous one, but only reads (or pops) the first operand and pushes it to the stack with all bits flipped.
 
 38: Bitwise AND
-- This instruction behaves like the previous one, but pops two operands off the stack and pushes the result of combining them according to a bitwise AND.
+- This instruction behaves like the previous one, but uses both operands and pushes the result of combining them according to a bitwise AND.
 
 39: Bitwise OR
 - This instruction behaves like the previous one, but performs the bitwise OR operation instead.
@@ -126,10 +126,10 @@ Each instruction may be followed by a specific or variable number of additional 
 - This instruction behaves like the previous one, but performs the bitwise XOR operation instead.
 
 41: Logical shift left
-- This instruction behaves like the previous one, but the second operand is always taken to be one byte. The output is the first operand bit shifted left (towards the least significant bit) by a number of bits specified by the right operand modulo the number of bits in the left operand. The bits that the shift brings in from the right are all 0s.
+- This instruction behaves like the previous one, but the second operand is always assumed to be one byte. The output is the first operand bit shifted left (towards the least significant bit) by a number of bits specified by the right operand modulo the number of bits in the left operand. The bits that the shift brings in from the right are all 0s.
 
 42: Arithmetic shift left
-- This instruction behaves like the previous one, but the bit that the shift brings in from the right are equal to the unshifted data's most significant bit.
+- This instruction behaves like the previous one, but the bits that the shift brings in from the right are equal to the unshifted data's most significant bit.
 
 43: Shift right
 - This instruction is like the previous one but shifts towards the right instead, bringing in 0s on the left.
@@ -138,10 +138,10 @@ Each instruction may be followed by a specific or variable number of additional 
 - This instruction is like the previous one, but shifts left, letting the bits shifted off the left end wrap back around to the right end.
 
 45: Rotate right
-- This instruction is like the previous one, but shifting in the opposite direction.
+- This instruction is like the previous one, but shifting and wrapping in the opposite direction.
 
 46: Addition
-- This instruction is like "equals" but provides the sum instead
+- This instruction is like "bitwise AND" but provides the sum instead
 
 47: Addition with carry
 - This instruction is like the previous one but starts by popping one byte off the stack and uses its least significant bit as the carry-in for the addition operation. After pushing the results, it then pushes one byte to the stack equal to 0x01 if the addition caused a carry, and 0x00 otherwise.
@@ -153,7 +153,7 @@ Each instruction may be followed by a specific or variable number of additional 
 - This instruction is like "addition with carry" but perform subtraction instead, and the carry-in is used as the borrow-in. A borrow-in value of 1 means no borrow, and a value of 0 means borrow. Carry-out likewise is 0x01 if there was no borrow and 0x00 if there was a borrow.
 
 50: Negate
-- This instruction is like "subtraction", but assumes the first operand to be 0.
+- This instruction is like "subtraction", but only reads (or pops) the first operand, uses it as the second operand, and uses 0 as the value for the first operand.
 
 51: Short unsigned multiplication
 - This instruction is like "equals", but instead of pushing a byte, it pushes a number of bytes equal to one operand, containing the unsigned integer product of both operands truncated to the size of one operand.
